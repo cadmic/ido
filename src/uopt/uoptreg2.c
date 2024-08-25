@@ -2468,13 +2468,6 @@ void globalcolor(void) {
                     if (lu->store_count != 0 || lu->firstisstr || !BITARR_GET(node->rlods, reg - 1)) {
                         BITARR_SET(node->rstrs, reg - 1, true);
                     } else {
-#ifdef UOPT_DEBUG
-                        if (lu->needregsave) {
-                            REDPRINT("this happened " ENTNAM_FMT() "\n", ENTNAM());
-                            print_register(reg);
-                            printf(" in node %d\n", node->num);
-                        }
-#endif
                         // store_count == 0, !firstisstr, in rlods
                         // but hasstore, !deadout, and needregsave or affected by call
                         // it thought it needed a store, but it actually didn't...?
