@@ -14,6 +14,8 @@
 #include "uoptdata.h"
 #include "uoptfeedback.h"
 
+#include "debug.h"
+
 extern int __Argc;
 
 struct Str32 {
@@ -237,6 +239,11 @@ void processargs(void) {
     static const struct Str32 str_tmp_uoptstrings = {"/tmp/uoptstrings                "};
     static const struct Str32 str_uoptlist = {"uoptlist                        "};
 
+#ifdef UOPT_DEBUG
+    static const struct Str32 str_no_tui = {"-no_tui                         "};
+    static const struct Str32 str_func = {"-func                           "};
+#endif
+
     listwritten = false;
     symwritten = false;
     listname[0] = ' ';
@@ -431,6 +438,18 @@ void processargs(void) {
                 }
                 usingregoption = true;
                 doprecolor = false;
+#ifdef UOPT_DEBUG
+            } else if (streq(arg, str_no_tui)) {
+                debug_tui = false;
+            } else if (streq(arg, str_func)) {
+                get_arg(++arg_index, debug_function, sizeof(debug_function));
+                for (int i = 0; i < ARRAYLEN(debug_function); i++) {
+                    if (debug_function[i] == ' ') {
+                        debug_function[i] = '\0';
+                        break;
+                    }
+                }
+#endif
             } else {
                 found_unrecognized = false;
                 str_opt = str_empty;

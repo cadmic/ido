@@ -160,6 +160,17 @@ def main():
         nargs="*",
         help="Arguments to pass to 'make'.",
     )
+    parser.add_argument(
+        "--function",
+        "-f",
+        action="store",
+        help="Specify function to analyze.",
+    )
+    parser.add_argument(
+        "--no-tui",
+        action="store_true",
+        help="Disable ncurses TUI.",
+    )
     args = parser.parse_args()
 
     root_dir = find_root_dir(
@@ -178,7 +189,15 @@ def main():
     )
 
     # get the recomp directory
-    compiler_directory = os.path.dirname(shlex.quote(compiler[0]))
+    compiler_directory = None
+    for arg in compiler:
+        if arg.endswith("/cc"):
+            compiler_directory = os.path.dirname(shlex.quote(arg))
+            break
+
+    if not compiler_directory:
+        print("Failed to find compiler directory")
+        sys.exit(1)
 
     cfe_bin = compiler_directory + "/cfe"
     uopt_bin = sys.path[0] + "/build/uopt"
@@ -207,11 +226,11 @@ def main():
     temp_files = {}
     cfe_out = None
     for command in cc_result.stderr.decode("utf-8").splitlines():
-        args = command.split(" ") # shlex.split(command) # lines have debug output, so might trip up shlex...
+        command_args = command.split(" ") # shlex.split(command) # lines have debug output, so might trip up shlex...
         cur_command = None
         next_is_output = False
 
-        for arg in args:
+        for arg in command_args:
             # cfe prints debug output on the same line as the uopt command,
             # need to ignore words until /usr/lib/uopt or /usr/lib/cfe
             if arg.startswith(("/usr/lib/cfe", "/usr/bin/cfe")):
@@ -245,6 +264,14 @@ def main():
 
             if cur_command and arg:
                 cur_command.append(arg)
+
+        # Add custom flags
+        if cur_command is uopt_command:
+            if args.function:
+                cur_command.append("-func")
+                cur_command.append(args.function)
+            if args.no_tui:
+                cur_command.append("-no_tui")
 
     #print("CFE COMMAND:", ' '.join(cfe_command))
     #print("UOPT COMMAND:", ' '.join(uopt_command))

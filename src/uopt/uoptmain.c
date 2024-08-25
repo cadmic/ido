@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include "libp/libp.h"
 #include "libu/libu.h"
 #include "common.h"
@@ -207,6 +208,21 @@ void oneproc(void) {
         skipproc(3);
     } else {
         entervregveqv();
+
+#ifdef UOPT_DEBUG
+        if (strlen(debug_function) != 0) {
+            if (strlen(debug_function) == entnam0len && strncmp(debug_function, entnam0, entnam0len) == 0) {
+                debug_enabled = true;
+            } else {
+                debug_enabled = false;
+            }
+        }
+#endif
+
+        LOG("\n");
+        LOG("oneproc: %.*s\n", entnam0len, entnam0);
+        LOG("\n");
+
         if (verbose) {
             write_string(err.c_file, entnam0, 1024, entnam0len);
             fflush(err.c_file);
@@ -492,10 +508,12 @@ void oneproc(void) {
             opt_saved_regs();
             reemit();
 #ifdef UOPT_DEBUG
-            ncdebug();
-            ucode_input_clear();
-            ucode_output_clear();
-            cmtrace_clear();
+            if (debug_enabled && debug_tui) {
+                ncdebug();
+                ucode_input_clear();
+                ucode_output_clear();
+                cmtrace_clear();
+            }
 #endif
             if (dbugno == 2) {
                 printtab();

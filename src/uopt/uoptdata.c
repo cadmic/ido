@@ -2421,3 +2421,10 @@ struct Proc *ciaprocs;
 0045D208 patchvectors
 */
 struct Statement *gsptr;
+
+#ifdef UOPT_DEBUG
+bool debug_tui = true;
+char debug_function[1024];
+
+bool debug_enabled = true;
+#endif

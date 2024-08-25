@@ -99,6 +99,20 @@
 
 #define ARRAYLEN(arr) (sizeof((arr)) / sizeof((arr)[0]))
 
+// ncurses tui enabled
+extern bool debug_tui;
+// function to debug
+extern char debug_function[1024];
+
+// debug features currently enabled
+extern bool debug_enabled;
+
+#ifdef UOPT_DEBUG
+#define LOG(...) if (debug_enabled) printf(__VA_ARGS__)
+#else
+#define LOG(...)
+#endif
+
 void ucode_output_clear();
 void ucode_input_clear();
 void push_input(union Bcode *b);
