@@ -1401,6 +1401,7 @@ void compute_save(struct LiveRange *lr) {
     struct LiveUnit *lu;
     float totalsave = 0.0f;
     float netsave;
+    int bbs;
 
     lr->unk1C = 0;
     for (lu = lr->liveunits; lu != NULL; lu = lu->next) {
@@ -1418,6 +1419,7 @@ void compute_save(struct LiveRange *lr) {
     }
 
     lr->unk1C += bvectcard(&lr->reachingbbs);
+    bbs = lr->unk1C;
     if (lr->unk1C > 2) {
         lr->unk1C = ((lr->unk1C - 2) >> 2) + 2;
     }
@@ -1431,6 +1433,14 @@ void compute_save(struct LiveRange *lr) {
         lr->unk23 = 1;
     } else {
         lr->unk23 = 2;
+    }
+
+    LOG("compute_save %d totalsave=%.0f bbs=%d unk1C=%d adjsave=%.2f\n", lr->bitpos, totalsave, bbs, lr->unk1C, lr->adjsave);
+    for (lu = lr->liveunits; lu != NULL; lu = lu->next) {
+        LOG("  node %d: load_count=%d store_count=%d frequency=%d adjneedreglod=%d adjneedregsave=%d\n",
+            lu->node->num, lu->load_count, lu->store_count, lu->node->frequency,
+            lu->needreglod && (lu->node->unk5 == notloopfirstbb || !canmoverlod(lu->node, lu->liverange)),
+            lr->hasstore && !lu->deadout && lu->needregsave && (lu->store_count != 0 || !lu->needreglod));
     }
 }
 
