@@ -1610,6 +1610,8 @@ void split(struct LiveRange **newlr, struct LiveRange **out, int regclass, bool 
     (*out)->unk23 = 0;
     (*newlr)->unk23 = 0;
 
+    LOG("  split: %d from %d\n", (*out)->bitpos, (*newlr)->bitpos);
+
     // 1. Find a live unit in the liverange where the first appearance is a definition
     found = false;
     lu = (*out)->liveunits;
@@ -2139,6 +2141,9 @@ void globalcolor(void) {
                 }
             }
 
+            LOG("globalcolor: constrained candidate_bit=%d adjsave=%.2f unk1C=%d cost=%.0f best=%.2f\n",
+                candidate_bit, liverange->adjsave, liverange->unk1C, liverange->adjsave * liverange->unk1C, best);
+
             //! this comparison makes -mfpmath=sse necessary, because otherwise the compiler uses double comparisons
             if (liverange->adjsave * liverange->unk1C <= best) {
                 split(&liverange, &splitlr, regclass, true);
@@ -2171,6 +2176,8 @@ void globalcolor(void) {
                         chosen_reg = reg;
                     }
                 }
+
+                LOG("  chosen_reg=%d %s\n", chosen_reg, regname(coloroffset(chosen_reg)));
 
                 liverange->assigned_reg = chosen_reg;
                 if (!allcallersave) {
@@ -2302,6 +2309,9 @@ void globalcolor(void) {
                 }
             }
 
+            LOG("globalcolor: unconstrained candidate_bit=%d adjsave=%.2f unk1C=%d cost=%.0f best=%.2f\n",
+                i, liverange->adjsave, liverange->unk1C, liverange->adjsave * liverange->unk1C, best);
+
             if (liverange->adjsave * liverange->unk1C > best && liverange->unk23 == 1) {
                 if (dowhyuncolor) {
                     numcoloredlr += 1;
@@ -2322,6 +2332,8 @@ void globalcolor(void) {
                         chosen_reg = reg;
                     }
                 }
+
+                LOG("  chosen_reg=%d %s\n", chosen_reg, regname(coloroffset(chosen_reg)));
 
                 liverange->assigned_reg = chosen_reg;
                 if (!allcallersave) {
