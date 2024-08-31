@@ -1998,6 +1998,9 @@ void globalcolor(void) {
         firstUseCost = movcostused * (graphhead->frequency * 2);
     }
 
+    LOG("globalcolor: curstaticno=%d firstUseCost=%.2f\n",
+        curstaticno, firstUseCost);
+
     //spB8 := regscantpass - [23] + [firstparmreg[1]..firstparmreg[1]+3] + [firstparmreg[2]..firstparmreg[2]+1];
     spB8 = SET64_MINUS(regscantpass, ee_ra) | GENMASK(firstparmreg[0], firstparmreg[0]+4) | GENMASK(firstparmreg[1], firstparmreg[1]+2);
 
@@ -2102,6 +2105,9 @@ void globalcolor(void) {
                 phi_f22 = cupcosts(liverange, firsterreg[regclass - 1] + 1, true);
             }
 
+            LOG("globalcolor: constrained candidate_bit=%d adjsave=%.2f unk1C=%d cost=%.0f\n",
+                candidate_bit, liverange->adjsave, liverange->unk1C, liverange->adjsave * liverange->unk1C);
+
             for (reg = firsterreg[regclass - 1]; reg <= lasterreg[regclass - 1]; reg++) {
                 if (!SET_IN(liverange->forbidden, reg)) {
                     if (!o3opt && !SET64_IN(spB8, reg)) {
@@ -2109,6 +2115,8 @@ void globalcolor(void) {
                     } else {
                         registerCost = cupcosts(liverange, reg, true);
                     }
+
+                    LOG("  reg=%s cost=%.2f\n", regname(coloroffset(reg)), registerCost);
 
                     if (registerCost < best) {
                         chosen_reg = reg;
@@ -2141,6 +2149,8 @@ void globalcolor(void) {
                         }
                     }
 
+                    LOG("  reg=%s cost=%.2f\n", regname(coloroffset(reg)), registerCost);
+
                     if (registerCost < best) {
                         chosen_reg = reg;
                         best = registerCost;
@@ -2150,9 +2160,6 @@ void globalcolor(void) {
                     }
                 }
             }
-
-            LOG("globalcolor: constrained candidate_bit=%d adjsave=%.2f unk1C=%d cost=%.0f best=%.2f\n",
-                candidate_bit, liverange->adjsave, liverange->unk1C, liverange->adjsave * liverange->unk1C, best);
 
             //! this comparison makes -mfpmath=sse necessary, because otherwise the compiler uses double comparisons
             if (liverange->adjsave * liverange->unk1C <= best) {
