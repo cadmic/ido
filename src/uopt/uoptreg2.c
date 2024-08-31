@@ -544,6 +544,8 @@ void localcolor(void) {
                             passedinreg(ichain, offsetpassedbyint) && doprecolor)  {
                         lu->reg = reg;
 
+                        LOG("localcolor: node %d assigned reg %s\n", node->num, regname(coloroffset(reg)));
+
                         SET_ADD(node->regsused[regclass - 1], reg);
 
                         if ((ichain->dtype == Qdt && regclass == 1) ||
@@ -569,6 +571,8 @@ void localcolor(void) {
 
                         lu->reg = reg;
                         lu->deadout = false;
+
+                        LOG("localcolor: node %d assigned reg %s\n", node->num, regname(coloroffset(reg)));
 
                         SET_ADD(node->regsused[regclass - 1], reg);
                         if (ichain->dtype == Qdt && regclass == 1) {
@@ -1023,13 +1027,19 @@ void updatecolorsleft(struct LiveRange *lr, int regclass) {
 
     for (reg = firsterreg[regclass - 1]; reg <= lasterreg[regclass - 1]; reg++) {
         if (!SET_IN(lr->forbidden, reg)) {
+            LOG("      reg %s: not forbidden\n", regname(coloroffset(reg)));
             regsleft++;
+        } else {
+            LOG("      reg %s: forbidden\n", regname(coloroffset(reg)));
         }
     }
 
     for (reg = firsteereg[regclass - 1]; reg <= lasteereg[regclass - 1]; reg++) {
         if (!SET_IN(lr->forbidden, reg)) {
+            LOG("      reg %s: not forbidden\n", regname(coloroffset(reg)));
             regsleft++;
+        } else {
+            LOG("      reg %s: forbidden\n", regname(coloroffset(reg)));
         }
     }
 
@@ -1083,6 +1093,7 @@ int marksharedintf(struct InterfereList *intf, int nodenum) {
         if (!intf->shared) {
             if (intf->liverange != NULL && bvectin(nodenum, &intf->liverange->livebbs)) {
                 intf->marked = true;
+                LOG("      shared intf: %d\n", intf->liverange->bitpos);
                 count++;
             }
         }
@@ -1103,6 +1114,8 @@ void addadjacents(struct LiveRange *lr1, struct LiveRange *lr2, struct LiveUnit 
     struct GraphnodeList *succ;
     struct InterfereList *intf;
 
+    LOG("  visiting node %d\n", formingtab[forminginx]->num);
+
     for (succ = formingtab[forminginx]->successors; succ != NULL; succ = succ->next) {
         if (!bvectin(succ->graphnode->num, &lr2->livebbs) && bvectin(succ->graphnode->num, &lr1->livebbs)) {
             lu = gettolivbb(lr1->ichain, succ->graphnode);
@@ -1110,10 +1123,17 @@ void addadjacents(struct LiveRange *lr1, struct LiveRange *lr2, struct LiveUnit 
             oldforbidden[1] = lr2->forbidden[1];
             prevregsleft = lr2->regsleft;
 
+            LOG("    node %d\n", succ->graphnode->num);
+
             // count the new interference nodes that would be added to lr2
             shared = marksharedintf(lr1->interfere, succ->graphnode->num);
             updateforbidden(succ->graphnode, lu->reg, lr2, regclass);
             updatecolorsleft(lr2, regclass);
+
+            LOG("    node %d: shared=%d prevregsleft=%d curregsleft=%d numintf=%d move=%d\n",
+                succ->graphnode->num, shared, prevregsleft, lr2->regsleft, lr2->numintf,
+                shared < prevregsleft && lr2->regsleft * 2 >= lr2->numintf + shared);
+
             if ((shared < prevregsleft && lr2->regsleft * 2 >= lr2->numintf + shared && doheurab) || (!doheurab && lr2->regsleft != 0)) {
                 // add this node to the BFS queue
                 formingmax++;
@@ -1435,7 +1455,7 @@ void compute_save(struct LiveRange *lr) {
         lr->unk23 = 2;
     }
 
-    LOG("compute_save %d totalsave=%.0f bbs=%d unk1C=%d adjsave=%.2f\n", lr->bitpos, totalsave, bbs, lr->unk1C, lr->adjsave);
+    LOG("compute_save lr=%d totalsave=%.0f bbs=%d unk1C=%d adjsave=%.2f\n", lr->bitpos, totalsave, bbs, lr->unk1C, lr->adjsave);
     for (lu = lr->liveunits; lu != NULL; lu = lu->next) {
         LOG("  node %d: load_count=%d store_count=%d frequency=%d adjneedreglod=%d adjneedregsave=%d\n",
             lu->node->num, lu->load_count, lu->store_count, lu->node->frequency,
@@ -1620,7 +1640,7 @@ void split(struct LiveRange **newlr, struct LiveRange **out, int regclass, bool 
     (*out)->unk23 = 0;
     (*newlr)->unk23 = 0;
 
-    LOG("  split: %d from %d\n", (*out)->bitpos, (*newlr)->bitpos);
+    LOG("split: lr=%d from lr=%d\n", (*out)->bitpos, (*newlr)->bitpos);
 
     // 1. Find a live unit in the liverange where the first appearance is a definition
     found = false;
@@ -1670,6 +1690,8 @@ void split(struct LiveRange **newlr, struct LiveRange **out, int regclass, bool 
     setbitbb(&(*newlr)->livebbs, lu->node->num);
     (*newlr)->forbidden[1] = 0;
     (*newlr)->forbidden[0] = 0;
+
+    LOG("  start node %d\n", lu->node->num);
 
     // initialize forbidden to be the set of regs used in the basic block
     updateforbidden(lu->node, lu->reg, *newlr, regclass);
@@ -1791,6 +1813,8 @@ void split(struct LiveRange **newlr, struct LiveRange **out, int regclass, bool 
     return;
 
 no_split:
+    LOG("  no split\n");
+
     if (!arg3) {
         dbgerror(0x273);
     }
@@ -2105,7 +2129,7 @@ void globalcolor(void) {
                 phi_f22 = cupcosts(liverange, firsterreg[regclass - 1] + 1, true);
             }
 
-            LOG("globalcolor: constrained candidate_bit=%d adjsave=%.2f unk1C=%d cost=%.0f\n",
+            LOG("globalcolor: constrained lr=%d adjsave=%.2f unk1C=%d cost=%.0f\n",
                 candidate_bit, liverange->adjsave, liverange->unk1C, liverange->adjsave * liverange->unk1C);
 
             for (reg = firsterreg[regclass - 1]; reg <= lasterreg[regclass - 1]; reg++) {
@@ -2194,7 +2218,7 @@ void globalcolor(void) {
                     }
                 }
 
-                LOG("  chosen_reg=%d %s\n", chosen_reg, regname(coloroffset(chosen_reg)));
+                LOG("  chosen_reg=%s\n", regname(coloroffset(chosen_reg)));
 
                 liverange->assigned_reg = chosen_reg;
                 if (!allcallersave) {
@@ -2232,6 +2256,7 @@ void globalcolor(void) {
 
                         bbtab[bb]->regdata.unk44[chosen_reg - 1] = bittab[candidate_bit].liverange->ichain;
 
+                        LOG("    regused node=%d reg=%s\n", bb, regname(coloroffset(chosen_reg)));
                         SET_ADD(bbtab[bb]->regsused[regclass - 1], chosen_reg);
                     }
                 }
@@ -2326,7 +2351,7 @@ void globalcolor(void) {
                 }
             }
 
-            LOG("globalcolor: unconstrained candidate_bit=%d adjsave=%.2f unk1C=%d cost=%.0f best=%.2f\n",
+            LOG("globalcolor: unconstrained lr=%d adjsave=%.2f unk1C=%d cost=%.0f best=%.2f\n",
                 i, liverange->adjsave, liverange->unk1C, liverange->adjsave * liverange->unk1C, best);
 
             if (liverange->adjsave * liverange->unk1C > best && liverange->unk23 == 1) {
@@ -2350,7 +2375,7 @@ void globalcolor(void) {
                     }
                 }
 
-                LOG("  chosen_reg=%d %s\n", chosen_reg, regname(coloroffset(chosen_reg)));
+                LOG("  reg=%s\n", regname(coloroffset(chosen_reg)));
 
                 liverange->assigned_reg = chosen_reg;
                 if (!allcallersave) {
@@ -2404,6 +2429,7 @@ void globalcolor(void) {
 
                         bbtab[bb]->regdata.unk44[chosen_reg - 1] = liverange->ichain;
 
+                        LOG("    regused node=%d reg=%s\n", bb, regname(coloroffset(chosen_reg)));
                         SET_ADD(bbtab[bb]->regsused[regclass - 1], chosen_reg);
                     }
                 }
