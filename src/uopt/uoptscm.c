@@ -203,6 +203,8 @@ static void strength_reduce(struct Statement *stat, struct Graphnode *node) {
     bool inpath;
     bool found;
 
+    LOG("strength_reduce: node %d\n", node->num);
+
     increment = func_00474DC0(stat->u.store.ichain->isop.op2);
     block = 0;
     if (node->loop == NULL || node->in_rolled_preloop) {
@@ -219,6 +221,11 @@ static void strength_reduce(struct Statement *stat, struct Graphnode *node) {
                 i += 0x80;
             } else {
                 for (bit = 0; i < bitposcount && bit != 0x80; i++, bit++) {
+                    LOG("  bit %d: cand=%d region=%d subinsert=%d\n", i,
+                        BVINBLOCK(bit, block, node->bvs.stage1.u.cm.cand),
+                        BVINBLOCK(bit, block, node->bvs.stage1.u.scm.region),
+                        BVINBLOCK(bit, block, node->bvs.stage1.u.cm.subinsert));
+
                     if (BVINBLOCK(bit, block, node->bvs.stage1.u.cm.cand) &&
                             (BVINBLOCK(bit, block, node->bvs.stage1.u.scm.region) ||
                              BVINBLOCK(bit, block, node->bvs.stage1.u.cm.subinsert))) {
@@ -241,6 +248,7 @@ static void strength_reduce(struct Statement *stat, struct Graphnode *node) {
                         if (inpath && (ichain->type != isop || (ichain->isop.opc != Uilod && ichain->isop.opc != Uirld))) {
                             factor = ivfactor(ichain, stat->u.store.ichain->isop.op1, &overflow, &multiplier, &mult_factor);
                             if (factor != 0 || multiplier != NULL) {
+                                LOG("  found candidate %d\n", ichain->bitpos);
                                 if (stat->u.store.u.str.srcands == NULL) {
                                     srcand = alloc_new(sizeof(struct StrengthReductionCand), &perm_heap);
                                     stat->u.store.u.str.srcands = srcand;
