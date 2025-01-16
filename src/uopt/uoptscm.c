@@ -221,11 +221,6 @@ static void strength_reduce(struct Statement *stat, struct Graphnode *node) {
                 i += 0x80;
             } else {
                 for (bit = 0; i < bitposcount && bit != 0x80; i++, bit++) {
-                    LOG("  bit %d: cand=%d region=%d subinsert=%d\n", i,
-                        BVINBLOCK(bit, block, node->bvs.stage1.u.cm.cand),
-                        BVINBLOCK(bit, block, node->bvs.stage1.u.scm.region),
-                        BVINBLOCK(bit, block, node->bvs.stage1.u.cm.subinsert));
-
                     if (BVINBLOCK(bit, block, node->bvs.stage1.u.cm.cand) &&
                             (BVINBLOCK(bit, block, node->bvs.stage1.u.scm.region) ||
                              BVINBLOCK(bit, block, node->bvs.stage1.u.cm.subinsert))) {

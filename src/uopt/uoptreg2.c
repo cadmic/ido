@@ -2306,6 +2306,9 @@ void globalcolor(void) {
                 phi_f22 = cupcosts(liverange, firsterreg[regclass - 1] + 1, true);
             }
 
+            LOG("globalcolor: unconstrained lr=%d adjsave=%.2f unk1C=%d cost=%.0f best=%.2f\n",
+                i, liverange->adjsave, liverange->unk1C, liverange->adjsave * liverange->unk1C, best);
+
             for (reg = firsterreg[regclass - 1]; reg <= lasterreg[regclass - 1]; reg++) {
                 if (!SET_IN(liverange->forbidden, reg)) {
                     if (!o3opt && !SET64_IN(spB8, reg)) {
@@ -2313,6 +2316,9 @@ void globalcolor(void) {
                     } else {
                         registerCost = cupcosts(liverange, reg, true);
                     }
+
+                    LOG("  reg=%s cost=%.2f\n", regname(coloroffset(reg)), registerCost);
+
                     if (registerCost < best) {
                         chosen_reg = reg;
                         best = registerCost;
@@ -2341,6 +2347,8 @@ void globalcolor(void) {
                         }
                     }
 
+                    LOG("  reg=%s cost=%.2f\n", regname(coloroffset(reg)), registerCost);
+
                     if (registerCost < best) {
                         SET64_INIT(available_regs, reg);
                         best = registerCost;
@@ -2350,9 +2358,6 @@ void globalcolor(void) {
                     }
                 }
             }
-
-            LOG("globalcolor: unconstrained lr=%d adjsave=%.2f unk1C=%d cost=%.0f best=%.2f\n",
-                i, liverange->adjsave, liverange->unk1C, liverange->adjsave * liverange->unk1C, best);
 
             if (liverange->adjsave * liverange->unk1C > best && liverange->unk23 == 1) {
                 if (dowhyuncolor) {
@@ -2375,7 +2380,7 @@ void globalcolor(void) {
                     }
                 }
 
-                LOG("  reg=%s\n", regname(coloroffset(chosen_reg)));
+                LOG("  chosen_reg=%s\n", regname(coloroffset(chosen_reg)));
 
                 liverange->assigned_reg = chosen_reg;
                 if (!allcallersave) {
